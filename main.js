@@ -1,4 +1,7 @@
-// Create Numeric Keyboard
+// Yeah, this code was made in a rush. It's quite a mess. 
+
+// New update coming soon!
+
 const keyboard = document.querySelector("#numeric-keyboard");
 const clearArray = ["AC", "C", "Backspace", "Escape"];
 const operatorArray = ["%", "÷", "+", "-", "×",
@@ -30,8 +33,6 @@ for (let i = 0; i < 5; i++) {
     keyboard.appendChild(line);
 }
 
-// Yeah, this code was made in a rush. It's quite a mess. 
-
 let validEquation = [];
 
 function truncateNumbers() {
@@ -41,11 +42,16 @@ function truncateNumbers() {
         firstNumber += `${(validEquation[i])}`;
         i++;
         operatorIndex = i;
-    } while(typeof(validEquation[i]) !== "string");
-    for (let j = operatorIndex + 1; j < validEquation.length; j++) {
-        secondNumber += `${(validEquation[j])}`;
+    } while(typeof(validEquation[i]) !== "string" && i < validEquation.length);
+
+    if (operatorIndex !== 0) {
+        for (let j = operatorIndex + 1; j < validEquation.length; j++) {
+            secondNumber += `${(validEquation[j])}`;
+        }
+        validEquation = [Number(firstNumber), validEquation[operatorIndex], Number(secondNumber)];
+    } else {
+        validEquation[0] = firstNumber;
     }
-    validEquation = [Number(firstNumber), validEquation[operatorIndex], Number(secondNumber)];
 }
 
 function evaluateEquation(n1, n2, operator) {
@@ -68,10 +74,10 @@ function evaluateEquation(n1, n2, operator) {
             answer = (n1 * n2);
             break;
         default:
-            console.error("Invalid operation."); 
+            console.error("Invalid operation.");
             break;
     }
-    stringNumber = `${(answer)}`;
+    stringNumber = `${(answer.toFixed(3))}`;
     if (stringNumber.split('').length > 7) {
         stringNumber = (stringNumber.slice(7));
     }
@@ -80,10 +86,8 @@ function evaluateEquation(n1, n2, operator) {
 
 const whereValuesAreShown = document.querySelector("#showValues");
 
-// validEquation has always the same format: [number, operator, number].
 function updateEquationResult() {
     truncateNumbers();
-    console.log(validEquation);
     const equationSize = validEquation.length;
     if (equationSize === 1) {
         return validEquation[0];
@@ -94,7 +98,6 @@ function updateEquationResult() {
         const n2 = validEquation[2]; 
         const operator = validEquation[1];
         const result = evaluateEquation(n1, n2, operator);
-        // Remove 3 elements starting from index 0.
         validEquation.splice(0, 3);
         validEquation.push(result);
         whereValuesAreShown.textContent = result;
@@ -103,22 +106,24 @@ function updateEquationResult() {
 }
 
 function floatUpdate() {
+    truncateNumbers();
     const n1 = validEquation[0];
     const n2 = validEquation[2]; 
     const operator = validEquation[1];
     const result = evaluateEquation(n1, n2, operator);
-    // Remove 3 elements starting from index 0.
     validEquation.splice(0, 3);
     validEquation.push(result);
     return validEquation[0];
 }
 
-// Hovering Keys
 const keys = keyboard.querySelectorAll(".keys");
 const keyArray = Array.from(keys);
 let operKey;
 let hitCounter = 0;
 let nextNumberFloat = false;
+let floatPoint;
+let integerPart;
+let lastNumber;
 
 keyArray.forEach((key) => {
     key.addEventListener('mouseenter', () => {
@@ -202,7 +207,7 @@ keyArray.forEach((key) => {
                 if (typeof(validEquation[validEquation.length - 1]) === "string") {
                     console.error("ERROR: TWO OPERATORS ENTRY");
                 } else {
-                    console.log(updateEquationResult());
+                    updateEquationResult();
                 }
             }
             key.classList.add("operatorSelected");
@@ -210,7 +215,6 @@ keyArray.forEach((key) => {
             hitCounter = 0;
         } else if (numbersArray.some((char) => (char === key.textContent))) {
             if (validEquation.some((elem) => (typeof(elem) === "string"))) {
-                // We use 'of' so that the loop may affect directly the DOOM elements within 'keys'.
                 for (operKey of keys) {
                     if (operatorArray.includes(operKey.textContent)) {
                         operKey.style.color = 'hsl(0, 0%, 100%)';
@@ -228,34 +232,35 @@ keyArray.forEach((key) => {
                 if (hitCounter < 7) {
                     hitCounter++;
                     if (key.textContent !== '.') {
-                        let floatPoint = document.querySelector("#keyNumber17");
-                        floatPoint.classList.remove("operatorSelected");
-                        floatPoint.style.color = "hsl(0, 0%, 100%)";
                         if (nextNumberFloat) {
-                            let integerPart = validEquation[validEquation.length - 1];
-                            validEquation[validEquation.length - 1] = (parseFloat(integerPart + Number(key.textContent) / 10));
+                            floatPoint = document.querySelector("#keyNumber17");
+                            floatPoint.classList.remove("operatorSelected");
+                            floatPoint.style.color = "hsl(0, 0%, 100%)";
+                            validEquation.push(parseFloat((Number(key.textContent) / 10) + lastNumber));
                             nextNumberFloat = false;
                         } else {
+                            lastNumber = Number(key.textContent);
                             validEquation.push(Number(key.textContent));
                         }
                     } else {
                         if (validEquation.splice(operatorIndex + 1).length !== 0) {
                             key.classList.add("operatorSelected");
                             nextNumberFloat = true;
+                            whereValuesAreShown.textContent = lastNumber;
                         }
                     }
                 }
                 for (i = operatorIndex + 1; i < validEquation.length; i++) {
-                    whereValuesAreShown.textContent += `${validEquation[i]}`;
-                } 
+                     whereValuesAreShown.textContent += `${validEquation[i]}`;
+                }
             } else {
                 if (hitCounter < 7) {
                     hitCounter++;
                     if (key.textContent !== '.') {
-                        let floatPoint = document.querySelector("#keyNumber17");
-                        floatPoint.classList.remove("operatorSelected");
-                        floatPoint.style.color = "hsl(0, 0%, 100%)";
                         if (nextNumberFloat) {
+                            floatPoint = document.querySelector("#keyNumber17");
+                            floatPoint.classList.remove("operatorSelected");
+                            floatPoint.style.color = "hsl(0, 0%, 100%)";
                             validEquation.push("+", parseFloat(Number(key.textContent) / 10));
                             floatUpdate();
                             nextNumberFloat = false;
@@ -274,15 +279,13 @@ keyArray.forEach((key) => {
                 } 
             }
         } else {
-            console.log(updateEquationResult());
+            updateEquationResult();
         }
     });
 });
 
-// Keyboard Support
 let setKey;
 document.addEventListener('keydown', (e) => {
-    console.log(e.key);
     switch(e.key) {
         case '0':
             setKey = document.querySelector("#keyNumber16");
@@ -380,7 +383,6 @@ document.addEventListener('keydown', (e) => {
             setTimeout(() => setKey.style.marginBottom = '0rem', 200);
             break;
         default:
-            console.log("Unavailable key.");
             break;
     }
 })
